@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lotto Pattern Engine</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Pattern Analysis Engine</h1>
+            <p>Evaluating 5/41 Machine Bias</p>
+        </header>
+
+        <section class="input-area">
+            <label>Paste Draw History (Newest at Top):</label>
+            <textarea id="drawHistory" placeholder="04 14 15 34 41..."></textarea>
+            <button id="analyzeBtn">Run Machine Audit</button>
+        </section>
+
+        <section class="dashboard">
+            <div id="statsGrid" class="stats-grid">
+                </div>
+        </section>
+
+        <section class="recommendations">
+            <h3>Strategic Lines (Based on Audit)</h3>
+            <div id="lineOutput"></div>
+        </section>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
