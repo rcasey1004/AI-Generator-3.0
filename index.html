@@ -2,27 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Pattern Engine 3.1 - Dynamic</title>
+    <title>Pattern Engine 3.2 - Fully Dynamic</title>
     <style>
         body { background: #121212; color: #e0e0e0; font-family: sans-serif; padding: 20px; }
         .app-container { max-width: 600px; margin: auto; background: #1e1e1e; padding: 25px; border-radius: 15px; border: 1px solid #333; }
-        .button-group { display: flex; gap: 10px; margin: 20px 0; }
+        textarea { width: 100%; height: 100px; background: #2d2d2d; color: #00ffcc; border: 1px solid #444; padding: 10px; border-radius: 5px; font-family: monospace; margin-bottom: 10px; box-sizing: border-box; }
+        .button-group { display: flex; gap: 10px; margin: 10px 0; }
         button { flex: 2; padding: 15px; background: #00ffcc; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; font-size: 16px; }
-        button:active { transform: scale(0.98); }
         button.secondary { flex: 1; background: #ff4444; color: white; }
+        .stats-bar { display: flex; justify-content: space-around; background: #121212; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9em; border-bottom: 2px solid #00ffcc; }
         .ticket-line { background: #2d2d2d; padding: 15px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #00ffcc; }
         .num-ball { color: #00ffcc; font-family: monospace; font-size: 1.4em; letter-spacing: 2px; font-weight: bold; }
         .label { color: #888; font-size: 0.8em; background: #121212; padding: 4px 8px; border-radius: 4px; }
-        h1 { margin-top: 0; color: #00ffcc; text-align: center; }
+        h1 { margin: 0 0 10px 0; color: #00ffcc; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    <h1>Pattern Engine 3.1</h1>
+    <h1>Pattern Engine 3.2</h1>
+    
+    <label style="font-size: 0.8em; color: #888;">Paste Draw History (Numbers only):</label>
+    <textarea id="drawInput" placeholder="Paste your sets here..."></textarea>
+
+    <div id="statsBar" class="stats-bar">
+        <span>Consecutive: --%</span>
+        <span>Low Anchor: --%</span>
+    </div>
     
     <div class="button-group">
-        <button onclick="generateSets()">Generate 5 New Sets</button>
+        <button onclick="runEngine()">Analyze & Generate</button>
         <button class="secondary" onclick="clearResults()">Clear All</button>
     </div>
 
@@ -30,46 +39,74 @@
 </div>
 
 <script>
-// Logic to ensure numbers are actually random every click
-function generateSets() {
+function runEngine() {
+    const input = document.getElementById('drawInput').value;
     const output = document.getElementById('lineOutput');
-    let newHtml = "";
+    const statsBar = document.getElementById('statsBar');
+    
+    // Parse the input data
+    const rows = input.trim().split('\n').map(row => (row.match(/\d+/g) || []).map(Number)).filter(row => row.length > 0);
+    
+    let consecutiveCount = 0;
+    let anchorCount = 0;
+    
+    if (rows.length > 0) {
+        rows.forEach(draw => {
+            let sorted = [...draw].sort((a, b) => a - b);
+            // Check for consecutives
+            for (let i = 0; i < sorted.length - 1; i++) {
+                if (sorted[i+1] - sorted[i] === 1) { consecutiveCount++; break; }
+            }
+            // Check for single digit anchor (1-9)
+            if (Math.min(...draw) <= 9) anchorCount++;
+        });
 
-    for (let i = 0; i < 5; i++) {
-        let set = new Set();
+        const consRate = (consecutiveCount / rows.length).toFixed(2);
+        const anchorRate = (anchorCount / rows.length).toFixed(2);
         
-        // 1. Mandatory Single Digit (1-9)
-        set.add(Math.floor(Math.random() * 9) + 1);
-        
-        // 2. 55% Bias for Consecutives
-        if (Math.random() < 0.55) {
-            let start = Math.floor(Math.random() * 30) + 10;
-            set.add(start);
-            set.add(start + 1);
+        statsBar.innerHTML = `<span>Consecutive: ${(consRate * 100).toFixed(0)}%</span> <span>Low Anchor: ${(anchorRate * 100).toFixed(0)}%</span>`;
+
+        // Generate 5 Lines using the analyzed probability
+        let newHtml = "";
+        for (let i = 0; i < 5; i++) {
+            let set = new Set();
+            
+            // Apply Anchor Rule based on history
+            if (Math.random() < anchorRate) {
+                set.add(Math.floor(Math.random() * 9) + 1);
+            }
+            
+            // Apply Consecutive Rule based on history
+            if (Math.random() < consRate) {
+                let start = Math.floor(Math.random() * 30) + 10;
+                set.add(start);
+                set.add(start + 1);
+            }
+
+            // Fill the rest
+            while (set.size < 5) {
+                set.add(Math.floor(Math.random() * 41) + 1);
+            }
+
+            const sortedArray = Array.from(set).sort((a, b) => a - b);
+            const sum = sortedArray.reduce((a, b) => a + b, 0);
+            const displayNums = sortedArray.map(n => n.toString().padStart(2, '0')).join(' ');
+
+            newHtml += `
+                <div class="ticket-line">
+                    <span class="num-ball">${displayNums}</span>
+                    <span class="label">SUM: ${sum}</span>
+                </div>`;
         }
-
-        // 3. Fill the rest to reach 5 unique numbers
-        while (set.size < 5) {
-            set.add(Math.floor(Math.random() * 41) + 1);
-        }
-
-        const sortedArray = Array.from(set).sort((a, b) => a - b);
-        const sum = sortedArray.reduce((a, b) => a + b, 0);
-        const displayNums = sortedArray.map(n => n.toString().padStart(2, '0')).join(' ');
-
-        newHtml += `
-            <div class="ticket-line">
-                <span class="num-ball">${displayNums}</span>
-                <span class="label">SUM: ${sum}</span>
-            </div>`;
+        output.innerHTML = newHtml + output.innerHTML;
+    } else {
+        alert("Please paste some drawing history first!");
     }
-
-    // Add to the top of the list
-    output.innerHTML = newHtml + output.innerHTML;
 }
 
 function clearResults() {
     document.getElementById('lineOutput').innerHTML = "";
+    document.getElementById('statsBar').innerHTML = "<span>Consecutive: --%</span> <span>Low Anchor: --%</span>";
 }
 </script>
 
