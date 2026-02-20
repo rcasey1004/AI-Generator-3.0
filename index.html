@@ -2,36 +2,76 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Lotto Pattern Engine 3.0</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Pattern Engine 3.1 - Dynamic</title>
+    <style>
+        body { background: #121212; color: #e0e0e0; font-family: sans-serif; padding: 20px; }
+        .app-container { max-width: 600px; margin: auto; background: #1e1e1e; padding: 25px; border-radius: 15px; border: 1px solid #333; }
+        .button-group { display: flex; gap: 10px; margin: 20px 0; }
+        button { flex: 2; padding: 15px; background: #00ffcc; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; font-size: 16px; }
+        button:active { transform: scale(0.98); }
+        button.secondary { flex: 1; background: #ff4444; color: white; }
+        .ticket-line { background: #2d2d2d; padding: 15px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #00ffcc; }
+        .num-ball { color: #00ffcc; font-family: monospace; font-size: 1.4em; letter-spacing: 2px; font-weight: bold; }
+        .label { color: #888; font-size: 0.8em; background: #121212; padding: 4px 8px; border-radius: 4px; }
+        h1 { margin-top: 0; color: #00ffcc; text-align: center; }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <header>
-            <h1>Pattern Engine 3.0</h1>
-            <p>Machine Bias Analysis & Dynamic Generator</p>
-        </header>
 
-        <section class="input-area">
-            <label>Paste Draw History:</label>
-            <textarea id="drawHistory">04 14 15 34 41
-02 07 17 26 27
-06 15 18 29 40
-05 08 09 26 36
-07 11 14 33 37</textarea>
-            <div class="button-group">
-                <button id="analyzeBtn">Generate New Sets</button>
-                <button id="clearBtn" class="secondary">Clear Results</button>
-            </div>
-        </section>
-
-        <div id="statsGrid" class="stats-grid"></div>
-
-        <section class="recommendations">
-            <h3>Live Generated Lines</h3>
-            <div id="lineOutput"></div>
-        </section>
+<div class="app-container">
+    <h1>Pattern Engine 3.1</h1>
+    
+    <div class="button-group">
+        <button onclick="generateSets()">Generate 5 New Sets</button>
+        <button class="secondary" onclick="clearResults()">Clear All</button>
     </div>
-    <script src="script.js"></script>
+
+    <div id="lineOutput"></div>
+</div>
+
+<script>
+// Logic to ensure numbers are actually random every click
+function generateSets() {
+    const output = document.getElementById('lineOutput');
+    let newHtml = "";
+
+    for (let i = 0; i < 5; i++) {
+        let set = new Set();
+        
+        // 1. Mandatory Single Digit (1-9)
+        set.add(Math.floor(Math.random() * 9) + 1);
+        
+        // 2. 55% Bias for Consecutives
+        if (Math.random() < 0.55) {
+            let start = Math.floor(Math.random() * 30) + 10;
+            set.add(start);
+            set.add(start + 1);
+        }
+
+        // 3. Fill the rest to reach 5 unique numbers
+        while (set.size < 5) {
+            set.add(Math.floor(Math.random() * 41) + 1);
+        }
+
+        const sortedArray = Array.from(set).sort((a, b) => a - b);
+        const sum = sortedArray.reduce((a, b) => a + b, 0);
+        const displayNums = sortedArray.map(n => n.toString().padStart(2, '0')).join(' ');
+
+        newHtml += `
+            <div class="ticket-line">
+                <span class="num-ball">${displayNums}</span>
+                <span class="label">SUM: ${sum}</span>
+            </div>`;
+    }
+
+    // Add to the top of the list
+    output.innerHTML = newHtml + output.innerHTML;
+}
+
+function clearResults() {
+    document.getElementById('lineOutput').innerHTML = "";
+}
+</script>
+
 </body>
 </html>
