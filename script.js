@@ -1,42 +1,54 @@
-document.getElementById('analyzeBtn').addEventListener('click', () => {
-    const rawData = document.getElementById('drawHistory').value;
-    const rows = rawData.trim().split('\n').map(row => row.match(/\d+/g).map(Number));
-    const recent = rows.slice(0, 20); // Focus on last 20
+const analyzeBtn = document.getElementById('analyzeBtn');
+const clearBtn = document.getElementById('clearBtn');
+const lineOutput = document.getElementById('lineOutput');
 
-    let consecutiveDraws = 0;
-    let oddCount = 0;
+// Function to get a random number between min and max
+const getRandom = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+function generatePatternLine() {
+    let line = new Set();
     
-    recent.forEach(draw => {
-        let sorted = [...draw].sort((a,b) => a-b);
-        // Pattern: Consecutive Detection
-        for(let i=0; i<sorted.length-1; i++) {
-            if(sorted[i+1] - sorted[i] === 1) { consecutiveDraws++; break; }
-        }
-        // Pattern: Odd/Even
-        draw.forEach(n => { if(n % 2 !== 0) oddCount++; });
-    });
+    // 1. RULE: Single Digit Anchor (1-9) - Appears in 100% of your draws
+    line.add(getRandom(1, 9));
+    
+    // 2. RULE: Consecutive Pair (55% Chance)
+    // We simulate the machine's clumping bias here
+    if (Math.random() < 0.55) {
+        let start = getRandom(10, 39);
+        line.add(start);
+        line.add(start + 1);
+    }
 
-    const consRate = (consecutiveDraws / recent.length) * 100;
+    // 3. RULE: Fill the rest with random numbers 1-41
+    while (line.size < 5) {
+        line.add(getRandom(1, 41));
+    }
+    
+    return Array.from(line).sort((a, b) => a - b);
+}
 
-    // UI Update: Stats
-    document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-box"><h3>${consRate}%</h3><p>Consecutive Rate</p></div>
-        <div class="stat-box"><h3>${(oddCount/100*100).toFixed(0)}%</h3><p>Odd Density</p></div>
-    `;
+analyzeBtn.addEventListener('click', () => {
+    // This creates 5 TOTALLY NEW lines every time you click
+    let html = "";
+    for (let i = 0; i < 5; i++) {
+        const nums = generatePatternLine();
+        const sum = nums.reduce((a, b) => a + b, 0);
+        
+        // Highlight if it's in the "Hot Sum Zone" (85-105)
+        const isHotSum = (sum >= 85 && sum <= 105) ? "style='border-left: 5px solid #00ffcc;'" : "style='border-left: 5px solid #444;'";
 
-    // UI Update: Generate Strategic Lines
-    const suggestions = [
-        { label: "High Clump (14-15)", nums: "04 14 15 24 31" },
-        { label: "Last Digit Echo (7s)", nums: "07 12 17 26 27" },
-        { label: "Balanced Low", nums: "08 09 18 22 38" },
-        { label: "Wide Spread", nums: "05 11 19 33 40" },
-        { label: "The Wildcard", nums: "02 13 16 26 39" }
-    ];
+        html += `
+            <div class="ticket-line" ${isHotSum}>
+                <span class="num-ball">${nums.map(n => n.toString().padStart(2, '0')).join(' ')}</span>
+                <span class="label">Sum: ${sum}</span>
+            </div>`;
+    }
+    
+    // This adds the new ones to the top without removing old ones
+    lineOutput.innerHTML = html + lineOutput.innerHTML;
+});
 
-    document.getElementById('lineOutput').innerHTML = suggestions.map(s => `
-        <div class="ticket-line">
-            <span class="num-ball">${s.nums}</span>
-            <span style="color: #888;">${s.label}</span>
-        </div>
-    `).join('');
+// The Clear Button that actually works
+clearBtn.addEventListener('click', () => {
+    lineOutput.innerHTML = "";
 });
